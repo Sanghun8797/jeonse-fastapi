@@ -54,16 +54,16 @@ def get_expense_std(salary: float) -> dict:
     for row in expense_std:
         if row[0] <= salary < row[1]:
             return {
-                "주거·수도·광열비": row[2],
-                "정보통신비": row[3],
-                "오락·문화비": row[4],
-                "음식·숙박비": row[5],
+                "주거·수도·광열": row[2],
+                "정보통신": row[3],
+                "오락·문화": row[4],
+                "음식·숙박": row[5],
             }
     return {
-        "주거·수도·광열비": 42.3,
-        "정보통신비": 24.9,
-        "오락·문화비": 25.2,
-        "음식·숙박비": 68.9,
+        "주거·수도·광열": 42.3,
+        "정보통신": 24.9,
+        "오락·문화": 25.2,
+        "음식·숙박": 68.9,
     }
 
 
@@ -165,10 +165,10 @@ def build_result(
     user_data["월소득액"] = salary
     user_data["공제비율"] = 0
     user_data["세후_소득액"] = salary
-    user_data["주거·수도·광열비"] = housing
-    user_data["정보통신비"] = comm
-    user_data["오락·문화비"] = culture
-    user_data["음식·숙박비"] = food
+    user_data["주거·수도·광열"] = housing
+    user_data["정보통신"] = comm
+    user_data["오락·문화"] = culture
+    user_data["음식·숙박"] = food
     user_data["월이자율"] = 0
     user_data["월상환액"] = debt
     user_data["남은현금"] = remain
@@ -200,10 +200,10 @@ def build_result(
 
     over_items = []
     for label, value in [
-        ("주거·수도·광열비", housing),
-        ("정보통신비", comm),
-        ("오락·문화비", culture),
-        ("음식·숙박비", food),
+        ("주거·수도·광열", housing),
+        ("정보통신", comm),
+        ("오락·문화", culture),
+        ("음식·숙박", food),
     ]:
         avg = std[label]
         if value > avg * 1.2:
@@ -215,10 +215,10 @@ def build_result(
             })
 
     item_compare = {
-        "주거·수도·광열비": compare_item(housing, std["주거·수도·광열비"]),
-        "정보통신비": compare_item(comm, std["정보통신비"]),
-        "오락·문화비": compare_item(culture, std["오락·문화비"]),
-        "음식·숙박비": compare_item(food, std["음식·숙박비"]),
+        "주거·수도·광열": compare_item(housing, std["주거·수도·광열"]),
+        "정보통신": compare_item(comm, std["정보통신"]),
+        "오락·문화": compare_item(culture, std["오락·문화"]),
+        "음식·숙박": compare_item(food, std["음식·숙박"]),
     }
 
     custom_recommendation = build_custom_recommendation(
@@ -574,10 +574,10 @@ Y_SCALE_FACTOR = checkpoint["y_scale_factor"]
 # =============================================================================
 class JeonseRequest(BaseModel):
     salary: float = Field(..., gt=0, description="세후 월소득 (만원)", example=280)
-    housing: float = Field(..., ge=0, description="주거·수도·광열비 (만원)", example=40)
-    comm: float = Field(..., ge=0, description="정보통신비 (만원)", example=10)
-    culture: float = Field(..., ge=0, description="오락·문화비 (만원)", example=15)
-    food: float = Field(..., ge=0, description="음식·숙박비 (만원)", example=50)
+    housing: float = Field(..., ge=0, description="주거·수도·광열 (만원)", example=40)
+    comm: float = Field(..., ge=0, description="정보통신 (만원)", example=10)
+    culture: float = Field(..., ge=0, description="오락·문화 (만원)", example=15)
+    food: float = Field(..., ge=0, description="음식·숙박 (만원)", example=50)
     debt: float = Field(..., ge=0, description="월상환액 (만원)", example=20)
     city_grade: Optional[Literal["대도시", "중도시", "지방"]] = Field(default=None, description="희망 지역 수준")
     housing_type: Optional[Literal["아파트", "오피스텔"]] = Field(default=None, description="희망 주거형태")
