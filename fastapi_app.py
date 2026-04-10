@@ -484,16 +484,16 @@ def render_html(result=None, error_message=""):
                     <label>세후 월소득 (만원)</label>
                     <input type="number" step="0.1" min="0.1" name="salary" placeholder="예: 280" required>
 
-                    <label>주거·수도·광열비 (만원)</label>
+                    <label>주거·수도·광열 (만원)</label>
                     <input type="number" step="0.1" min="0" name="housing" placeholder="예: 40" required>
 
-                    <label>정보통신비 (만원)</label>
+                    <label>정보통신 (만원)</label>
                     <input type="number" step="0.1" min="0" name="comm" placeholder="예: 10" required>
 
-                    <label>오락·문화비 (만원)</label>
+                    <label>오락·문화 (만원)</label>
                     <input type="number" step="0.1" min="0" name="culture" placeholder="예: 15" required>
 
-                    <label>음식·숙박비 (만원)</label>
+                    <label>음식·숙박 (만원)</label>
                     <input type="number" step="0.1" min="0" name="food" placeholder="예: 50" required>
 
                     <label>월상환액 (만원)</label>
