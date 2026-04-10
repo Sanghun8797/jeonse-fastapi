@@ -49,7 +49,6 @@ expense_std = [
     (900, 999999, 42.3, 24.9, 25.2, 68.9),
 ]
 
-
 def get_expense_std(salary: float) -> dict:
     for row in expense_std:
         if row[0] <= salary < row[1]:
@@ -66,14 +65,12 @@ def get_expense_std(salary: float) -> dict:
         "음식·숙박": 68.9,
     }
 
-
 def get_pyeong(price: float, table: dict, max_m2: Optional[float] = None) -> str:
     closest_m2 = min(table, key=lambda m: abs(table[m] - price))
     pyeong = round(closest_m2 / 3.305785, 1)
     if max_m2 and closest_m2 >= max_m2:
         return f"{pyeong}평 이상"
     return f"{pyeong}평"
-
 
 def get_all_options(price: float, apt_tables: dict, opi_tables: dict) -> dict:
     return {
@@ -83,7 +80,6 @@ def get_all_options(price: float, apt_tables: dict, opi_tables: dict) -> dict:
         }
         for grade in ["대도시", "중도시", "지방"]
     }
-
 
 def compare_item(value: float, avg: float) -> dict:
     diff = value - avg
@@ -105,7 +101,6 @@ def compare_item(value: float, avg: float) -> dict:
         "상태": item_status,
     }
 
-
 def build_custom_recommendation(
     city_grade: str,
     housing_type: str,
@@ -117,35 +112,45 @@ def build_custom_recommendation(
     if valid_city and valid_housing:
         return {
             "유형": "정확 추천",
+            "제목": "딱 맞는 희망 조건 추천",
+            "아이콘": "🎯",
             "내용": f"{city_grade} {housing_type} 추천 평수",
             "추천평수": options[city_grade][housing_type],
+            "설명": "입력한 지역과 주거형태를 기준으로 가장 직접적인 추천 결과입니다."
         }
 
     if valid_city:
         return {
             "유형": "지역 기준 추천",
+            "제목": "희망 지역 중심 추천",
+            "아이콘": "📍",
             "지역": city_grade,
             "추천": {
                 "아파트": options[city_grade]["아파트"],
                 "오피스텔": options[city_grade]["오피스텔"],
             },
+            "설명": "지역은 정해졌지만 주거형태를 선택하지 않아 두 유형을 함께 보여드립니다."
         }
 
     if valid_housing:
         return {
             "유형": "주거형태 기준 추천",
+            "제목": "희망 주거형태 중심 추천",
+            "아이콘": "🏢",
             "주거형태": housing_type,
             "추천": {
                 grade: options[grade][housing_type]
                 for grade in ["대도시", "중도시", "지방"]
             },
+            "설명": "주거형태는 정해졌지만 지역을 선택하지 않아 지역별로 비교할 수 있게 보여드립니다."
         }
 
     return {
         "유형": "안내",
+        "제목": "추가 맞춤 추천 안내",
+        "아이콘": "💡",
         "내용": "희망 지역이나 주거형태를 입력하면 맞춤 추천을 추가로 볼 수 있습니다.",
     }
-
 
 def build_result(
     salary: float,
@@ -189,12 +194,24 @@ def build_result(
 
     if remain < 0:
         status = "🚨 적자"
+        status_class = "danger"
+        headline = "지금은 전세보다 지출 구조 정리가 먼저예요."
+        summary_comment = "현재 구조에서는 지출 조정이 우선 필요합니다."
     elif expense_ratio >= 0.85:
         status = "🚨 과다지출"
+        status_class = "danger"
+        headline = "지출 비중이 높아 전세 선택 폭이 좁아질 수 있어요."
+        summary_comment = "지출 비중이 높아 전세 선택 폭이 줄어들 수 있습니다."
     elif expense_ratio >= 0.70:
         status = "⚠️ 빠듯함"
+        status_class = "warning"
+        headline = "전세는 가능하지만 소비를 조금 줄이면 더 유리해요."
+        summary_comment = "전세는 가능하지만 소비를 줄이면 더 유리해집니다."
     else:
         status = "✅ 적정"
+        status_class = "success"
+        headline = "현재 소비 구조라면 비교적 안정적으로 접근할 수 있어요."
+        summary_comment = "현재 소비 구조는 비교적 안정적인 편입니다."
 
     options = get_all_options(predicted_jeonse, apt_tables, opi_tables)
 
@@ -244,6 +261,9 @@ def build_result(
             "월상환액": round(debt, 1),
             "남은현금": round(remain, 1),
             "소비상태": status,
+            "상태클래스": status_class,
+            "헤드라인": headline,
+            "코멘트": summary_comment,
         },
         "전세추천": {
             "모델_예측_전세금": predicted_jeonse,
@@ -261,7 +281,6 @@ def build_result(
             "1년": round(remain * 12, 1) if remain > 0 else 0,
         },
     }
-
 
 def render_html(result=None, error_message=""):
     result_html = ""
@@ -301,42 +320,115 @@ def render_html(result=None, error_message=""):
         if isinstance(advice, list):
             for item in advice:
                 if isinstance(item, dict):
-                    advice_html += f"<li>{item['항목']}: 현재 {item['현재']}만원 / 평균 {item['평균']}만원 / 절감여지 {item['절감여지']}만원</li>"
+                    advice_html += (
+                        f"""
+                        <div class="tip-item">
+                            <div class="tip-icon">💸</div>
+                            <div class="tip-content">
+                                <div class="tip-title">{item['항목']} 지출 점검</div>
+                                <div class="tip-desc">
+                                    현재 {item['현재']}만원 / 평균 {item['평균']}만원 / 절감 여지 {item['절감여지']}만원
+                                </div>
+                            </div>
+                        </div>
+                        """
+                    )
                 else:
-                    advice_html += f"<li>{item}</li>"
+                    advice_html += (
+                        f"""
+                        <div class="tip-item">
+                            <div class="tip-icon">✅</div>
+                            <div class="tip-content">
+                                <div class="tip-title">지출 상태 양호</div>
+                                <div class="tip-desc">{item}</div>
+                            </div>
+                        </div>
+                        """
+                    )
 
         custom_html = ""
         if custom["유형"] == "정확 추천":
-            custom_html = f"<p>{custom['내용']}: <strong>{custom['추천평수']}</strong></p>"
+            custom_html = f"""
+            <div class="recommend-box">
+                <div class="recommend-header">
+                    <span class="recommend-icon">{custom['아이콘']}</span>
+                    <span class="recommend-title">{custom['제목']}</span>
+                </div>
+                <div class="recommend-main">{custom['내용']}</div>
+                <div class="recommend-value">{custom['추천평수']}</div>
+                <div class="recommend-desc">{custom['설명']}</div>
+            </div>
+            """
         elif custom["유형"] == "지역 기준 추천":
             custom_html = f"""
-            <p><strong>{custom['지역']}</strong> 기준 추천</p>
-            <ul>
-                <li>아파트: {custom['추천']['아파트']}</li>
-                <li>오피스텔: {custom['추천']['오피스텔']}</li>
-            </ul>
+            <div class="recommend-box">
+                <div class="recommend-header">
+                    <span class="recommend-icon">{custom['아이콘']}</span>
+                    <span class="recommend-title">{custom['제목']}</span>
+                </div>
+                <div class="recommend-main">{custom['지역']} 기준 추천</div>
+                <ul class="recommend-list">
+                    <li>아파트: {custom['추천']['아파트']}</li>
+                    <li>오피스텔: {custom['추천']['오피스텔']}</li>
+                </ul>
+                <div class="recommend-desc">{custom['설명']}</div>
+            </div>
             """
         elif custom["유형"] == "주거형태 기준 추천":
             rows = ""
             for grade, p in custom["추천"].items():
                 rows += f"<li>{grade}: {p}</li>"
             custom_html = f"""
-            <p><strong>{custom['주거형태']}</strong> 기준 추천</p>
-            <ul>{rows}</ul>
+            <div class="recommend-box">
+                <div class="recommend-header">
+                    <span class="recommend-icon">{custom['아이콘']}</span>
+                    <span class="recommend-title">{custom['제목']}</span>
+                </div>
+                <div class="recommend-main">{custom['주거형태']} 기준 추천</div>
+                <ul class="recommend-list">{rows}</ul>
+                <div class="recommend-desc">{custom['설명']}</div>
+            </div>
             """
         else:
-            custom_html = f"<p>{custom['내용']}</p>"
+            custom_html = f"""
+            <div class="recommend-box">
+                <div class="recommend-header">
+                    <span class="recommend-icon">{custom['아이콘']}</span>
+                    <span class="recommend-title">{custom['제목']}</span>
+                </div>
+                <div class="recommend-desc">{custom['내용']}</div>
+            </div>
+            """
 
         result_html = f"""
+        <div class="hero-result card">
+            <div class="hero-result-top">
+                <div class="hero-result-title">분석 결과</div>
+                <div class="status-pill status-{summary['상태클래스']}">{summary['소비상태']}</div>
+            </div>
+            <div class="hero-result-headline">{summary['헤드라인']}</div>
+            <div class="hero-result-sub">{summary['코멘트']}</div>
+        </div>
+
         <div class="card">
-            <h2>📋 결과 리포트</h2>
-            <p><strong>세후 월소득:</strong> {summary['세후_월소득']}만원</p>
-            <p><strong>월 총지출:</strong> {summary['월_총지출']}만원</p>
-            <p><strong>월상환액:</strong> {summary['월상환액']}만원</p>
-            <p><strong>남은현금:</strong> {summary['남은현금']}만원</p>
-            <p><strong>소비 상태:</strong> {summary['소비상태']}</p>
-            <p><strong>모델 예측 전세금:</strong> {jeonse['모델_예측_전세금']}만원</p>
-            <p><strong>적정 전세금 범위:</strong> {jeonse['적정_전세금_범위']['최소']}만원 ~ {jeonse['적정_전세금_범위']['최대']}만원</p>
+            <h2>📋 핵심 요약</h2>
+            <div class="summary-grid">
+                <div class="summary-box highlight-blue">
+                    <div class="summary-icon">🏠</div>
+                    <div class="summary-label">모델 예측 전세금</div>
+                    <div class="summary-value">{jeonse['모델_예측_전세금']}만원</div>
+                </div>
+                <div class="summary-box highlight-green">
+                    <div class="summary-icon">💵</div>
+                    <div class="summary-label">남은현금</div>
+                    <div class="summary-value">{summary['남은현금']}만원</div>
+                </div>
+                <div class="summary-box highlight-gray">
+                    <div class="summary-icon">📌</div>
+                    <div class="summary-label">적정 전세금 범위</div>
+                    <div class="summary-value small">{jeonse['적정_전세금_범위']['최소']} ~ {jeonse['적정_전세금_범위']['최대']}만원</div>
+                </div>
+            </div>
         </div>
 
         <div class="card">
@@ -380,13 +472,23 @@ def render_html(result=None, error_message=""):
 
         <div class="card">
             <h2>💡 소비 조언</h2>
-            <ul>{advice_html}</ul>
+            <div class="tip-list">{advice_html}</div>
         </div>
 
         <div class="card">
-            <h2>💰 예상 저축 가능액</h2>
-            <p><strong>6개월:</strong> {saving['6개월']}만원</p>
-            <p><strong>1년:</strong> {saving['1년']}만원</p>
+            <h2>💰 저축 가능액</h2>
+            <div class="saving-grid">
+                <div class="saving-box">
+                    <div class="saving-icon">📅</div>
+                    <div class="summary-label">6개월 기준</div>
+                    <div class="summary-value">{saving['6개월']}만원</div>
+                </div>
+                <div class="saving-box">
+                    <div class="saving-icon">🗓️</div>
+                    <div class="summary-label">1년 기준</div>
+                    <div class="summary-value">{saving['1년']}만원</div>
+                </div>
+            </div>
         </div>
         """
 
@@ -397,133 +499,485 @@ def render_html(result=None, error_message=""):
     <html lang="ko">
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>전세 추천 프로그램</title>
         <style>
-            body {{
-                font-family: Arial, sans-serif;
-                background: #f5f7fb;
-                margin: 0;
-                padding: 0;
+            :root {{
+                --bg: #f4f7fb;
+                --card: #ffffff;
+                --line: #e5e7eb;
+                --text: #111827;
+                --sub: #6b7280;
+                --primary: #2563eb;
+                --primary-dark: #1d4ed8;
+                --success: #16a34a;
+                --warning: #d97706;
+                --danger: #dc2626;
+                --blue-soft: #eff6ff;
+                --green-soft: #ecfdf3;
+                --gray-soft: #f8fafc;
+                --shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
             }}
-            .container {{
-                max-width: 900px;
-                margin: 40px auto;
-                padding: 20px;
-            }}
-            .card {{
-                background: white;
-                border-radius: 14px;
-                padding: 24px;
-                margin-bottom: 20px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            }}
-            h1, h2 {{
-                margin-top: 0;
-            }}
-            label {{
-                display: block;
-                margin-top: 14px;
-                font-weight: bold;
-            }}
-            input, select {{
-                width: 100%;
-                padding: 10px;
-                margin-top: 6px;
-                border: 1px solid #ccc;
-                border-radius: 8px;
+
+            * {{
                 box-sizing: border-box;
             }}
+
+            body {{
+                font-family: "Malgun Gothic", Arial, sans-serif;
+                background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 100%);
+                margin: 0;
+                padding: 0;
+                color: var(--text);
+            }}
+
+            .container {{
+                max-width: 1080px;
+                margin: 32px auto;
+                padding: 20px;
+            }}
+
+            .hero {{
+                background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                color: white;
+                border-radius: 24px;
+                padding: 34px;
+                box-shadow: var(--shadow);
+                margin-bottom: 24px;
+            }}
+
+            .hero h1 {{
+                margin: 0 0 10px 0;
+                font-size: 34px;
+            }}
+
+            .hero p {{
+                margin: 0;
+                font-size: 15px;
+                line-height: 1.7;
+                opacity: 0.95;
+            }}
+
+            .card {{
+                background: var(--card);
+                border-radius: 20px;
+                padding: 24px;
+                margin-bottom: 20px;
+                box-shadow: var(--shadow);
+            }}
+
+            .hero-result {{
+                border: 1px solid #dbeafe;
+                background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            }}
+
+            .hero-result-top {{
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 12px;
+            }}
+
+            .hero-result-title {{
+                font-size: 18px;
+                font-weight: 800;
+            }}
+
+            .hero-result-headline {{
+                font-size: 28px;
+                font-weight: 900;
+                line-height: 1.4;
+                margin-bottom: 8px;
+            }}
+
+            .hero-result-sub {{
+                color: var(--sub);
+                font-size: 14px;
+            }}
+
+            .status-pill {{
+                padding: 8px 12px;
+                border-radius: 999px;
+                font-size: 13px;
+                font-weight: 800;
+                white-space: nowrap;
+            }}
+
+            .status-success {{
+                color: #15803d;
+                background: #dcfce7;
+            }}
+
+            .status-warning {{
+                color: #b45309;
+                background: #fef3c7;
+            }}
+
+            .status-danger {{
+                color: #b91c1c;
+                background: #fee2e2;
+            }}
+
+            h2 {{
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-size: 22px;
+            }}
+
+            .desc {{
+                color: var(--sub);
+                font-size: 14px;
+                margin-bottom: 18px;
+            }}
+
+            .form-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }}
+
+            .field {{
+                display: flex;
+                flex-direction: column;
+            }}
+
+            label {{
+                font-weight: bold;
+                margin-bottom: 8px;
+            }}
+
+            input, select {{
+                width: 100%;
+                padding: 12px 14px;
+                border: 1px solid #d1d5db;
+                border-radius: 12px;
+                font-size: 15px;
+                background: #fff;
+            }}
+
+            input:focus, select:focus {{
+                outline: none;
+                border-color: var(--primary);
+                box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+            }}
+
+            .hint {{
+                color: var(--sub);
+                font-size: 12px;
+                margin-top: 6px;
+            }}
+
             button {{
                 width: 100%;
-                margin-top: 20px;
-                padding: 14px;
+                margin-top: 22px;
+                padding: 15px;
                 border: none;
-                border-radius: 10px;
-                background: #2563eb;
+                border-radius: 14px;
+                background: var(--primary);
                 color: white;
                 font-size: 16px;
+                font-weight: 700;
                 cursor: pointer;
+                transition: 0.2s ease;
             }}
+
             button:hover {{
-                background: #1d4ed8;
+                background: var(--primary-dark);
+                transform: translateY(-1px);
             }}
+
+            button:disabled {{
+                opacity: 0.7;
+                cursor: not-allowed;
+            }}
+
+            .summary-grid {{
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 14px;
+            }}
+
+            .summary-box, .saving-box {{
+                border-radius: 16px;
+                padding: 18px;
+                border: 1px solid var(--line);
+            }}
+
+            .highlight-blue {{
+                background: var(--blue-soft);
+            }}
+
+            .highlight-green {{
+                background: var(--green-soft);
+            }}
+
+            .highlight-gray {{
+                background: var(--gray-soft);
+            }}
+
+            .summary-icon, .saving-icon {{
+                font-size: 24px;
+                margin-bottom: 8px;
+            }}
+
+            .summary-label {{
+                color: var(--sub);
+                font-size: 13px;
+                margin-bottom: 8px;
+            }}
+
+            .summary-value {{
+                font-size: 26px;
+                font-weight: 900;
+                line-height: 1.35;
+            }}
+
+            .summary-value.small {{
+                font-size: 22px;
+            }}
+
             table {{
                 width: 100%;
                 border-collapse: collapse;
                 margin-top: 10px;
             }}
+
             th, td {{
-                border: 1px solid #ddd;
-                padding: 10px;
+                border: 1px solid var(--line);
+                padding: 12px;
                 text-align: center;
-            }}
-            th {{
-                background: #f0f4ff;
-            }}
-            .desc {{
-                color: #555;
                 font-size: 14px;
-                margin-top: 6px;
             }}
+
+            th {{
+                background: #eff6ff;
+            }}
+
+            .recommend-box {{
+                background: #f8fafc;
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                padding: 20px;
+            }}
+
+            .recommend-header {{
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 12px;
+            }}
+
+            .recommend-icon {{
+                font-size: 22px;
+            }}
+
+            .recommend-title {{
+                font-size: 18px;
+                font-weight: 800;
+            }}
+
+            .recommend-main {{
+                font-size: 16px;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }}
+
+            .recommend-value {{
+                font-size: 30px;
+                font-weight: 900;
+                color: var(--primary);
+                margin-bottom: 8px;
+            }}
+
+            .recommend-desc {{
+                color: var(--sub);
+                font-size: 14px;
+                line-height: 1.6;
+            }}
+
+            .recommend-list {{
+                margin: 8px 0 0 18px;
+                padding: 0;
+                line-height: 1.8;
+            }}
+
+            .tip-list {{
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }}
+
+            .tip-item {{
+                display: flex;
+                gap: 12px;
+                align-items: flex-start;
+                background: #f8fafc;
+                border: 1px solid var(--line);
+                border-radius: 16px;
+                padding: 16px;
+            }}
+
+            .tip-icon {{
+                font-size: 22px;
+                line-height: 1;
+            }}
+
+            .tip-title {{
+                font-size: 15px;
+                font-weight: 800;
+                margin-bottom: 4px;
+            }}
+
+            .tip-desc {{
+                color: var(--sub);
+                font-size: 14px;
+                line-height: 1.6;
+            }}
+
+            .saving-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+            }}
+
             .error {{
                 background: #fee2e2;
                 color: #b91c1c;
                 padding: 12px;
-                border-radius: 10px;
+                border-radius: 12px;
                 margin-bottom: 20px;
+                font-weight: 700;
+            }}
+
+            .footer-note {{
+                text-align: center;
+                color: var(--sub);
+                font-size: 13px;
+                margin-top: 18px;
+            }}
+
+            @media (max-width: 900px) {{
+                .form-grid,
+                .summary-grid,
+                .saving-grid {{
+                    grid-template-columns: 1fr;
+                }}
+
+                .hero h1 {{
+                    font-size: 28px;
+                }}
+
+                .hero-result-headline {{
+                    font-size: 24px;
+                }}
+
+                .summary-value,
+                .recommend-value {{
+                    font-size: 22px;
+                }}
+
+                .hero-result-top {{
+                    flex-direction: column;
+                    align-items: flex-start;
+                }}
             }}
         </style>
     </head>
     <body>
         <div class="container">
-            <div class="card">
+            <div class="hero">
                 <h1>🏠 사용자 직접 입력 기반 전세 추천</h1>
+                <p>
+                    세후 월소득과 월별 지출 정보를 입력하면, 학습된 모델을 바탕으로
+                    적정 전세금 범위와 거주 가능한 평수를 추천해드립니다.
+                </p>
+            </div>
+
+            <div class="card">
+                <h2>입력 정보</h2>
                 <p class="desc">모든 금액 단위는 <strong>만원</strong>입니다. 예: 280 입력 = 280만원</p>
                 {error_html}
-                <form method="post" action="/predict-form">
-                    <label>세후 월소득 (만원)</label>
-                    <input type="number" step="0.1" min="0.1" name="salary" placeholder="예: 280" required>
 
-                    <label>주거·수도·광열 (만원)</label>
-                    <input type="number" step="0.1" min="0" name="housing" placeholder="예: 40" required>
+                <form method="post" action="/predict-form" onsubmit="showLoading()">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>세후 월소득</label>
+                            <input type="number" step="0.1" min="0.1" name="salary" placeholder="예: 280" required>
+                            <div class="hint">단위: 만원</div>
+                        </div>
 
-                    <label>정보통신 (만원)</label>
-                    <input type="number" step="0.1" min="0" name="comm" placeholder="예: 10" required>
+                        <div class="field">
+                            <label>월상환액</label>
+                            <input type="number" step="0.1" min="0" name="debt" placeholder="예: 20" required>
+                            <div class="hint">단위: 만원</div>
+                        </div>
 
-                    <label>오락·문화 (만원)</label>
-                    <input type="number" step="0.1" min="0" name="culture" placeholder="예: 15" required>
+                        <div class="field">
+                            <label>주거·수도·광열</label>
+                            <input type="number" step="0.1" min="0" name="housing" placeholder="예: 40" required>
+                            <div class="hint">월세, 관리비, 전기·가스·수도비 등</div>
+                        </div>
 
-                    <label>음식·숙박 (만원)</label>
-                    <input type="number" step="0.1" min="0" name="food" placeholder="예: 50" required>
+                        <div class="field">
+                            <label>정보통신</label>
+                            <input type="number" step="0.1" min="0" name="comm" placeholder="예: 10" required>
+                            <div class="hint">휴대폰 요금, 인터넷 요금 등</div>
+                        </div>
 
-                    <label>월상환액 (만원)</label>
-                    <input type="number" step="0.1" min="0" name="debt" placeholder="예: 20" required>
+                        <div class="field">
+                            <label>오락·문화</label>
+                            <input type="number" step="0.1" min="0" name="culture" placeholder="예: 15" required>
+                            <div class="hint">취미, 영화, 게임, 여가비 등</div>
+                        </div>
 
-                    <label>희망 지역 수준</label>
-                    <select name="city_grade">
-                        <option value="">선택 안 함</option>
-                        <option value="대도시">대도시</option>
-                        <option value="중도시">중도시</option>
-                        <option value="지방">지방</option>
-                    </select>
+                        <div class="field">
+                            <label>음식·숙박</label>
+                            <input type="number" step="0.1" min="0" name="food" placeholder="예: 50" required>
+                            <div class="hint">식비, 카페, 외식, 숙박비 등</div>
+                        </div>
 
-                    <label>희망 주거형태</label>
-                    <select name="housing_type">
-                        <option value="">선택 안 함</option>
-                        <option value="아파트">아파트</option>
-                        <option value="오피스텔">오피스텔</option>
-                    </select>
+                        <div class="field">
+                            <label>희망 지역 수준</label>
+                            <select name="city_grade">
+                                <option value="">선택 안 함</option>
+                                <option value="대도시">대도시</option>
+                                <option value="중도시">중도시</option>
+                                <option value="지방">지방</option>
+                            </select>
+                        </div>
 
-                    <button type="submit">전세 추천 결과 보기</button>
+                        <div class="field">
+                            <label>희망 주거형태</label>
+                            <select name="housing_type">
+                                <option value="">선택 안 함</option>
+                                <option value="아파트">아파트</option>
+                                <option value="오피스텔">오피스텔</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="submit-btn" type="submit">전세 추천 결과 보기</button>
                 </form>
             </div>
 
             {result_html}
+
+            <div class="footer-note">
+                머신러닝 기반 전세 추천 서비스
+            </div>
         </div>
+
+        <script>
+            function showLoading() {{
+                const btn = document.getElementById("submit-btn");
+                btn.disabled = true;
+                btn.innerText = "계산 중입니다...";
+            }}
+        </script>
     </body>
     </html>
     """
-
 
 # =============================================================================
 # 3. 모델 정의
@@ -543,7 +997,6 @@ class JeonseNet(nn.Module):
 
     def forward(self, x):
         return self.net(x)
-
 
 # =============================================================================
 # 4. 저장된 객체 불러오기
@@ -568,20 +1021,18 @@ model.eval()
 
 Y_SCALE_FACTOR = checkpoint["y_scale_factor"]
 
-
 # =============================================================================
 # 5. 요청 스키마
 # =============================================================================
 class JeonseRequest(BaseModel):
-    salary: float = Field(..., gt=0, description="세후 월소득 (만원)", example=280)
-    housing: float = Field(..., ge=0, description="주거·수도·광열 (만원)", example=40)
-    comm: float = Field(..., ge=0, description="정보통신 (만원)", example=10)
-    culture: float = Field(..., ge=0, description="오락·문화 (만원)", example=15)
-    food: float = Field(..., ge=0, description="음식·숙박 (만원)", example=50)
-    debt: float = Field(..., ge=0, description="월상환액 (만원)", example=20)
+    salary: float = Field(..., gt=0, description="세후 월소득 (만원)")
+    housing: float = Field(..., ge=0, description="주거·수도·광열 (만원)")
+    comm: float = Field(..., ge=0, description="정보통신 (만원)")
+    culture: float = Field(..., ge=0, description="오락·문화 (만원)")
+    food: float = Field(..., ge=0, description="음식·숙박 (만원)")
+    debt: float = Field(..., ge=0, description="월상환액 (만원)")
     city_grade: Optional[Literal["대도시", "중도시", "지방"]] = Field(default=None, description="희망 지역 수준")
     housing_type: Optional[Literal["아파트", "오피스텔"]] = Field(default=None, description="희망 주거형태")
-
 
 # =============================================================================
 # 6. API
@@ -589,7 +1040,6 @@ class JeonseRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def home():
     return render_html()
-
 
 @app.post("/predict")
 def predict_jeonse(payload: JeonseRequest):
@@ -605,10 +1055,8 @@ def predict_jeonse(payload: JeonseRequest):
             housing_type=payload.housing_type or "",
         )
         return result
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"예측 중 오류가 발생했습니다: {e}")
-
 
 @app.post("/predict-form", response_class=HTMLResponse)
 def predict_form(
@@ -642,7 +1090,6 @@ def predict_form(
 
     except Exception as e:
         return render_html(error_message=f"오류가 발생했습니다: {e}")
-    
 
 if __name__ == "__main__":
     import uvicorn
