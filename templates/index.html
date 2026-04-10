@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전세 적정가 분석 시스템</title>
+    <style>
+        :root {
+            --navy:       #0f1f3d;
+            --navy-mid:   #1a2f52;
+            --blue:       #1e5fd4;
+            --blue-light: #3b82f6;
+            --accent:     #0ea5e9;
+            --gold:       #f59e0b;
+            --success:    #10b981;
+            --warning:    #f59e0b;
+            --danger:     #ef4444;
+            --bg:         #f0f4f9;
+            --card:       #ffffff;
+            --border:     #dde3ed;
+            --text:       #0f1f3d;
+            --sub:        #64748b;
+            --shadow:     0 4px 24px rgba(15,31,61,0.10);
+            --shadow-lg:  0 8px 40px rgba(15,31,61,0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            background: var(--navy);
+            padding: 0 40px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .topbar-brand span { color: var(--accent); }
+        .topbar-tag {
+            font-size: 11px;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1e3a6e 100%);
+            padding: 52px 40px 44px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: "";
+            position: absolute;
+            right: -60px; top: -60px;
+            width: 340px; height: 340px;
+            border-radius: 50%;
+            background: rgba(30,95,212,0.18);
+            pointer-events: none;
+        }
+        .hero-inner { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+        .hero-label {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .hero h1 {
+            font-size: 32px;
+            font-weight: 900;
+            line-height: 1.3;
+            margin-bottom: 12px;
+        }
+        .hero p {
+            color: #94b4d4;
+            font-size: 14px;
+            line-height: 1.8;
+            max-width: 560px;
+        }
+
+        /* ── Layout ── */
+        .main { max-width: 1080px; margin: 0 auto; padding: 32px 20px 60px; }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            padding: 28px 32px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--sub);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title::before {
+            content: "";
+            display: inline-block;
+            width: 4px; height: 16px;
+            background: var(--blue);
+            border-radius: 2px;
+        }
+
+        /* ── Form ── */
+        .form-note {
+            font-size: 13px;
+            color: var(--sub);
+            margin-bottom: 22px;
+            padding: 10px 14px;
+            background: #f0f4f9;
+            border-left: 3px solid var(--blue);
+            border-radius: 4px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 6px; position: relative; }
+
+        label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        input[type="number"], select {
+            padding: 11px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: inherit;
+            color: var(--text);
+            background: #fff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--blue-light);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        }
+        input.warn { border-color: var(--warning); }
+        input.warn:focus { box-shadow: 0 0 0 3px rgba(245,158,11,0.15); }
+
+        .field-hint { font-size: 11px; color: var(--sub); }
+        .field-warn {
+            font-size: 11px;
+            color: var(--warning);
+            font-weight: 600;
+            display: none;
+        }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 24px;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: opacity 0.2s, transform 0.15s;
+            box-shadow: 0 4px 16px rgba(30,95,212,0.30);
+        }
+        .submit-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+        .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* ── Error ── */
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid var(--danger);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #b91c1c;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* ── Status banner ── */
+        .status-banner {
+            border-radius: 14px;
+            padding: 24px 28px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 20px;
+            border: 1px solid transparent;
+        }
+        .status-banner.success { background: #ecfdf5; border-color: #a7f3d0; }
+        .status-banner.warning { background: #fffbeb; border-color: #fde68a; }
+        .status-banner.danger  { background: #fef2f2; border-color: #fecaca; }
+
+        .status-icon { font-size: 36px; line-height: 1; }
+        .status-body { flex: 1; }
+        .status-pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .pill-success { background: #d1fae5; color: #065f46; }
+        .pill-warning { background: #fef3c7; color: #92400e; }
+        .pill-danger  { background: #fee2e2; color: #991b1b; }
+        .status-headline { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+        .status-sub { font-size: 13px; color: var(--sub); }
+
+        /* ── KPI grid ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .kpi {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        .kpi-label { font-size: 11px; color: var(--sub); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .kpi-value { font-size: 24px; font-weight: 900; color: var(--navy); }
+        .kpi-unit  { font-size: 12px; color: var(--sub); font-weight: 400; margin-left: 2px; }
+        .kpi.primary { border-top: 3px solid var(--blue); }
+        .kpi.accent  { border-top: 3px solid var(--accent); }
+        .kpi.gold    { border-top: 3px solid var(--gold); }
+        .kpi.green   { border-top: 3px solid var(--success); }
+
+        /* ── Tables ── */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead tr { background: #f8fafc; }
+        th {
+            padding: 11px 14px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--sub);
+            border-bottom: 2px solid var(--border);
+        }
+        td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+        .tag-과다    { background: #fee2e2; color: #991b1b; }
+        .tag-약간높음 { background: #fef3c7; color: #92400e; }
+        .tag-적정    { background: #d1fae5; color: #065f46; }
+        .tag-절약    { background: #dbeafe; color: #1e40af; }
+
+        /* ── Region grid ── */
+        .region-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .region-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+        }
+        .region-name { font-size: 11px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+        .region-row  { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .region-row:last-child { border-bottom: none; }
+        .region-type { color: var(--sub); font-size: 12px; }
+        .region-val  { font-weight: 700; color: var(--navy); }
+
+        /* ── Custom recommend ── */
+        .recommend-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            padding: 22px 24px;
+        }
+        .recommend-label { font-size: 11px; font-weight: 700; color: var(--blue); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+        .recommend-value { font-size: 30px; font-weight: 900; color: var(--navy); margin-bottom: 6px; }
+        .recommend-desc  { font-size: 13px; color: var(--sub); line-height: 1.6; }
+        .recommend-list  { list-style: none; margin-top: 10px; }
+        .recommend-list li { padding: 6px 0; border-bottom: 1px solid #bfdbfe; font-size: 13px; display: flex; justify-content: space-between; }
+        .recommend-list li:last-child { border-bottom: none; }
+
+        /* ── Advice items ── */
+        .advice-item {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            padding: 14px 16px;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        .advice-item:last-child { margin-bottom: 0; }
+        .advice-icon { font-size: 20px; line-height: 1; margin-top: 1px; }
+        .advice-label { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+        .advice-desc  { font-size: 12px; color: var(--sub); line-height: 1.6; }
+        .advice-ok    { background: #f0fdf4; border-color: #bbf7d0; }
+
+        /* ── Saving ── */
+        .saving-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .saving-card {
+            background: #f0fdf4;
+            border: 1px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .saving-label { font-size: 11px; font-weight: 700; color: #065f46; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; }
+        .saving-value { font-size: 26px; font-weight: 900; color: #065f46; }
+
+        /* ── Debt warning ── */
+        .debt-warn {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-left: 4px solid var(--warning);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #92400e;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            color: var(--sub);
+            font-size: 12px;
+            padding: 30px 0 20px;
+            border-top: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .hero { padding: 36px 20px 30px; }
+            .hero h1 { font-size: 24px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: 1fr 1fr; }
+            .region-grid { grid-template-columns: 1fr; }
+            .saving-grid { grid-template-columns: 1fr; }
+            .topbar { padding: 0 20px; }
+            .main { padding: 20px 14px 50px; }
+            .card { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+    <div class="topbar-brand">🏢 <span>JEONSE</span>&nbsp;ANALYTICS</div>
+    <div class="topbar-tag">AI-Powered Housing Analysis</div>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+    <div class="hero-inner">
+        <div class="hero-label">전세 적정가 분석 시스템</div>
+        <h1>머신러닝 기반<br>전세 적정가 및 재무 분석</h1>
+        <p>월 소득과 지출 정보를 입력하면 학습된 모델이 적정 전세금 범위와
+        지역별 거주 가능 평수, 재무 상태를 분석해드립니다.</p>
+    </div>
+</div>
+
+<div class="main">
+
+    <!-- Input form -->
+    <div class="card">
+        <div class="card-title">재무 정보 입력</div>
+        <div class="form-note">모든 금액 단위는 <strong>만원</strong>입니다. &nbsp;예: 월소득 280만원 → <strong>280</strong> 입력</div>
+
+        {% if error %}
+        <div class="error-box">⚠️ {{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/predict-form" onsubmit="return handleSubmit()">
+            <div class="form-grid">
+
+                <div class="field">
+                    <label>세후 월소득 *</label>
+                    <input type="number" name="salary" id="salary" step="0.1" min="0.1"
+                           placeholder="예: 280" required
+                           data-warn-above="1000" data-warn-msg="월소득 1,000만원 초과 — 단위가 만원이 맞나요?">
+                    <span class="field-hint">공제 후 실수령액 기준</span>
+                    <span class="field-warn" id="warn-salary"></span>
+                </div>
+
+                <div class="field">
+                    <label>월 상환액</label>
+                    <input type="number" name="debt" id="debt" step="0.1" min="0"
+                           placeholder="없으면 0" value="0"
+                           data-warn-above="300" data-warn-msg="월상환액 300만원 초과 — 확인해주세요">
+                    <span class="field-hint">대출금 월 상환액 (이자 포함). 없으면 0</span>
+                    <span class="field-warn" id="warn-debt"></span>
+                </div>
+
+                <div class="field">
+                    <label>주거·수도·광열</label>
+                    <input type="number" name="housing" id="housing" step="0.1" min="0"
+                           placeholder="예: 40"
+                           data-warn-above="200" data-warn-msg="200만원 초과 — 단위 확인">
+                    <span class="field-hint">관리비, 전기·가스·수도비 등</span>
+                    <span class="field-warn" id="warn-housing"></span>
+                </div>
+
+                <div class="field">
+                    <label>정보통신</label>
+                    <input type="number" name="comm" id="comm" step="0.1" min="0"
+                           placeholder="예: 10"
+                           data-warn-above="100" data-warn-msg="100만원 초과 — 단위 확인">
+                    <span class="field-hint">휴대폰, 인터넷 요금 등</span>
+                    <span class="field-warn" id="warn-comm"></span>
+                </div>
+
+                <div class="field">
+                    <label>오락·문화</label>
+                    <input type="number" name="culture" id="culture" step="0.1" min="0"
+                           placeholder="예: 15"
+                           data-warn-above="150" data-warn-msg="150만원 초과 — 단위 확인">
+                    <span class="field-hint">취미, 영화, 여가비 등</span>
+                    <span class="field-warn" id="warn-culture"></span>
+                </div>
+
+                <div class="field">
+                    <label>음식·숙박</label>
+                    <input type="number" name="food" id="food" step="0.1" min="0"
+                           placeholder="예: 50"
+                           data-warn-above="200" data-warn-msg="200만원 초과 — 단위 확인">
+                    <span class="field-hint">식비, 외식, 카페, 숙박비 등</span>
+                    <span class="field-warn" id="warn-food"></span>
+                </div>
+
+                <div class="field">
+                    <label>희망 지역</label>
+                    <select name="city_grade">
+                        <option value="">선택 안 함</option>
+                        <option value="대도시">대도시 (서울·부산 등)</option>
+                        <option value="중도시">중도시 (성남·인천 등)</option>
+                        <option value="지방">지방 / 소도시</option>
+                    </select>
+                    <span class="field-hint">선택 시 맞춤 평수 추천 제공</span>
+                </div>
+
+                <div class="field">
+                    <label>희망 주거형태</label>
+                    <select name="housing_type">
+                        <option value="">선택 안 함</option>
+                        <option value="아파트">아파트</option>
+                        <option value="오피스텔">오피스텔</option>
+                    </select>
+                    <span class="field-hint">선택 시 맞춤 평수 추천 제공</span>
+                </div>
+
+            </div>
+            <button class="submit-btn" id="submit-btn" type="submit">분석 시작</button>
+        </form>
+    </div>
+
+    {% if result %}
+    {% set s = result.요약 %}
+    {% set j = result.전세추천 %}
+
+    <!-- Status banner -->
+    <div class="status-banner {{ s.상태클래스 }}">
+        <div class="status-icon">
+            {% if s.상태클래스 == "success" %}✅{% elif s.상태클래스 == "warning" %}⚠️{% else %}🚨{% endif %}
+        </div>
+        <div class="status-body">
+            <div class="status-pill pill-{{ s.상태클래스 }}">{{ s.상태 }}</div>
+            <div class="status-headline">
+                {% if s.상태클래스 == "success" %}안정적인 재무 구조입니다.
+                {% elif s.상태클래스 == "warning" %}전세는 가능하나 지출 조정이 도움됩니다.
+                {% else %}지출 구조 개선이 먼저 필요합니다.{% endif %}
+            </div>
+            <div class="status-sub">소비 상태 기준: 지출/소득 비율 분석 결과</div>
+        </div>
+    </div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+        <div class="kpi primary">
+            <div class="kpi-label">모델 예측 전세금</div>
+            <div class="kpi-value">{{ "{:,}".format(j.예측) }}<span class="kpi-unit">만원</span></div>
+        </div>
+        <div class="kpi accent">
+            <div class="kpi-label">적정 전세금 범위</div>
+            <div class="kpi-value" style="font-size:17px;">{{ "{:,}".format(j.최소) }} ~ {{ "{:,}".format(j.최대) }}<span class="kpi-unit">만원</span></div>
+        </div>
+        <div class="kpi gold">
+            <div class="kpi-label">월 총지출</div>
+            <div class="kpi-value">{{ s.월_총지출 }}<span class="kpi-unit">만원</span></div>
+        </div>
+        <div class="kpi green">
+            <div class="kpi-label">남은 현금</div>
+            <div class="kpi-value">{{ s.남은현금 }}<span class="kpi-unit">만원</span></div>
+        </div>
+    </div>
+
+    {% if s.대출부담경고 %}
+    <div class="debt-warn">⚠️ 월상환액이 소득의 35% 이상입니다. 대출 부담이 높아 전세금 상한을 보수적으로 산정했습니다.</div>
+    {% endif %}
+
+    <!-- Expense comparison -->
+    <div class="card">
+        <div class="card-title">지출 항목 분석</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>항목</th>
+                    <th>입력값 (만원)</th>
+                    <th>평균 (만원)</th>
+                    <th>차이 (만원)</th>
+                    <th>비율</th>
+                    <th>상태</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item, info in result.지출비교.items() %}
+            <tr>
+                <td><strong>{{ item }}</strong></td>
+                <td>
+                    {% if item == "주거·수도·광열" %}{{ s.월_총지출 - result.요약.월상환액 - (result.지출비교["정보통신"]["평균"] + result.지출비교["오락·문화"]["평균"] + result.지출비교["음식·숙박"]["평균"]) | round(1) }}
+                    {% else %}{{ info.평균 }}{% endif %}
+                </td>
+                <td>{{ info.평균 }}</td>
+                <td style="color: {% if info.차이 > 0 %}var(--danger){% else %}var(--success){% endif %}; font-weight:700;">
+                    {% if info.차이 > 0 %}+{% endif %}{{ info.차이 }}
+                </td>
+                <td>{{ info.비율 }}%</td>
+                <td><span class="tag tag-{{ info.태그 }}">{{ info.태그 }}</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Region options -->
+    <div class="card">
+        <div class="card-title">지역별 거주 가능 평수</div>
+        <div class="region-grid">
+            {% for grade, types in result.거주옵션.items() %}
+            <div class="region-card">
+                <div class="region-name">{{ grade }}</div>
+                <div class="region-row">
+                    <span class="region-type">🏢 아파트</span>
+                    <span class="region-val">{{ types.아파트 }}</span>
+                </div>
+                <div class="region-row">
+                    <span class="region-type">🏨 오피스텔</span>
+                    <span class="region-val">{{ types.오피스텔 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Custom recommendation -->
+    {% set cr = result.희망조건 %}
+    {% if cr.유형 != "none" %}
+    <div class="card">
+        <div class="card-title">희망 조건 맞춤 추천</div>
+        <div class="recommend-card">
+            {% if cr.유형 == "exact" %}
+                <div class="recommend-label">🎯 {{ cr.지역 }} · {{ cr.주거형태 }} 추천</div>
+                <div class="recommend-value">약 {{ cr.추천평수 }}</div>
+                <div class="recommend-desc">입력하신 지역과 주거형태 기준의 직접 추천 결과입니다.</div>
+            {% elif cr.유형 == "city" %}
+                <div class="recommend-label">📍 {{ cr.지역 }} 기준 추천</div>
+                <ul class="recommend-list">
+                    <li><span>아파트</span><strong>{{ cr.추천.아파트 }}</strong></li>
+                    <li><span>오피스텔</span><strong>{{ cr.추천.오피스텔 }}</strong></li>
+                </ul>
+                <div class="recommend-desc" style="margin-top:10px;">주거형태를 선택하면 더 구체적인 추천을 받을 수 있습니다.</div>
+            {% elif cr.유형 == "type" %}
+                <div class="recommend-label">🏢 {{ cr.주거형태 }} 지역별 추천</div>
+                <ul class="recommend-list">
+                    {% for grade, val in cr.추천.items() %}
+                    <li><span>{{ grade }}</span><strong>{{ val }}</strong></li>
+                    {% endfor %}
+                </ul>
+                <div class="recommend-desc" style="margin-top:10px;">희망 지역을 선택하면 더 구체적인 추천을 받을 수 있습니다.</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Advice -->
+    <div class="card">
+        <div class="card-title">소비 조언</div>
+        {% if result.과다지출 %}
+            {% for item in result.과다지출 %}
+            <div class="advice-item">
+                <div class="advice-icon">💸</div>
+                <div>
+                    <div class="advice-label">{{ item.항목 }} 지출 점검</div>
+                    <div class="advice-desc">현재 {{ item.현재 }}만원 / 평균 {{ item.평균 }}만원 — 약 {{ item.절감 }}만원 절감 여지가 있습니다.</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="advice-item advice-ok">
+                <div class="advice-icon">✅</div>
+                <div>
+                    <div class="advice-label">지출 상태 양호</div>
+                    <div class="advice-desc">평균 대비 특별히 과다한 지출 항목이 없습니다.</div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Saving -->
+    <div class="card">
+        <div class="card-title">예상 저축 가능액</div>
+        {% if s.남은현금 > 0 %}
+        <div class="saving-grid">
+            <div class="saving-card">
+                <div class="saving-label">📅 6개월 기준</div>
+                <div class="saving-value">{{ "{:,}".format(result.저축["6개월"] | int) }}<span style="font-size:14px;font-weight:400;"> 만원</span></div>
+            </div>
+            <div class="saving-card">
+                <div class="saving-label">🗓️ 1년 기준</div>
+                <div class="saving-value">{{ "{:,}".format(result.저축["1년"] | int) }}<span style="font-size:14px;font-weight:400;"> 만원</span></div>
+            </div>
+        </div>
+        {% else %}
+        <div class="advice-item" style="background:#fef2f2;border-color:#fecaca;">
+            <div class="advice-icon">⚠️</div>
+            <div>
+                <div class="advice-label">저축 여력 부족</div>
+                <div class="advice-desc">현재 지출 구조에서는 저축이 어렵습니다. 지출 절감 또는 상환 부담 조정이 필요합니다.</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+    <div class="footer">
+        머신러닝 기반 전세 적정가 분석 시스템 &nbsp;|&nbsp; 본 결과는 참고용이며 실제 계약 시 전문가 상담을 권장합니다.
+    </div>
+</div>
+
+<script>
+    // ── Inline validation warnings ─────────────────────────────────────
+    const fields = ["salary", "debt", "housing", "comm", "culture", "food"];
+
+    fields.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        const warnEl = document.getElementById("warn-" + id);
+        const threshold = parseFloat(input.dataset.warnAbove);
+        const msg = input.dataset.warnMsg;
+
+        input.addEventListener("input", () => {
+            const val = parseFloat(input.value);
+            if (!isNaN(val) && val > threshold) {
+                input.classList.add("warn");
+                warnEl.textContent = "⚠️ " + msg;
+                warnEl.style.display = "block";
+            } else {
+                input.classList.remove("warn");
+                warnEl.style.display = "none";
+            }
+        });
+    });
+
+    // ── Submit handler ─────────────────────────────────────────────────
+    function handleSubmit() {
+        // Check if any warnings are visible — ask user to confirm
+        const activeWarns = fields.filter(id => {
+            const w = document.getElementById("warn-" + id);
+            return w && w.style.display === "block";
+        });
+
+        if (activeWarns.length > 0) {
+            const ok = confirm("입력값 중 일부가 기준을 초과합니다.\n단위(만원)가 맞는지 확인하셨나요?\n\n계속 진행하시겠습니까?");
+            if (!ok) return false;
+        }
+
+        const btn = document.getElementById("submit-btn");
+        btn.disabled = true;
+        btn.textContent = "분석 중...";
+        return true;
+    }
+
+    // ── Auto scroll to results ─────────────────────────────────────────
+    {% if result %}
+    window.addEventListener("load", () => {
+        const banner = document.querySelector(".status-banner");
+        if (banner) banner.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    {% endif %}
+</script>
+
+</body>
+</html>
