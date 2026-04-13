@@ -139,13 +139,38 @@ def build_result(salary, housing, comm, culture, food, debt, city_grade, housing
             "대출부담경고": debt_ratio >= 0.35,
         },
         "전세추천": {"예측": predicted, "최소": min_j, "최대": max_j},
+        
+        "입력요약": {
+            "세후_월소득": round(salary, 1),
+            "주거·수도·광열": round(housing, 1),
+            "정보통신": round(comm, 1),
+            "오락·문화": round(culture, 1),
+            "음식·숙박": round(food, 1),
+            "월상환액": round(debt, 1),
+            "월_총지출": round(total_expense, 1),
+            "남은현금": round(remain, 1),
+        },
+        "신뢰도설명": {
+            "제목": "이 결과는 이렇게 계산되었어요",
+            "항목": [
+                "학습된 머신러닝 모델을 기반으로 전세금을 예측했습니다.",
+                "사용자가 입력한 월소득과 지출 구조를 함께 반영했습니다.",
+                "평균 소비 데이터와 비교해 과다 지출 여부를 분석했습니다.",
+                "지역 및 주거형태 조건에 따라 거주 가능 평수를 함께 추천했습니다."
+            ]
+        },
+
         "지출비교": item_cmp,
         "거주옵션": options,
         "희망조건": build_custom_recommendation(city_grade, housing_type, options),
         "과다지출": over_items,
         "저축": {"6개월": round(remain * 6, 1) if remain > 0 else 0,
-                 "1년":   round(remain * 12, 1) if remain > 0 else 0},
+                 "1년": round(remain * 12, 1) if remain > 0 else 0},
     }
+
+
+
+
 
 # =============================================================================
 # 3. 모델 로드
