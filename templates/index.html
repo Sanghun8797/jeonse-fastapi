@@ -270,6 +270,109 @@
         .kpi.gold    { border-top: 3px solid var(--gold); }
         .kpi.green   { border-top: 3px solid var(--success); }
 
+
+
+
+                /* ── Input summary / trust cards ── */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .mini-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .mini-kpi {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .mini-kpi-label {
+            font-size: 11px;
+            color: var(--sub);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .mini-kpi-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: var(--navy);
+        }
+
+        .mini-kpi-unit {
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--sub);
+            margin-left: 2px;
+        }
+
+        .trust-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            padding: 20px 22px;
+            height: 100%;
+        }
+
+        .trust-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--blue);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .trust-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .trust-list li {
+            position: relative;
+            padding-left: 22px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        .trust-list li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--blue);
+            font-weight: 900;
+        }
+
+        @media (max-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mini-kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+
+
+
+
+
         /* ── Tables ── */
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         thead tr { background: #f8fafc; }
@@ -547,6 +650,76 @@
     {% if s.대출부담경고 %}
     <div class="debt-warn">⚠️ 월상환액이 소득의 35% 이상입니다. 대출 부담이 높아 전세금 상한을 보수적으로 산정했습니다.</div>
     {% endif %}
+
+
+
+    <!-- Input summary + trust -->
+    <div class="info-grid">
+
+        <div class="card" style="margin-bottom:0;">
+            <div class="card-title">입력 요약</div>
+
+            <div class="mini-kpi-grid">
+                <div class="mini-kpi">
+                    <div class="mini-kpi-label">세후 월소득</div>
+                    <div class="mini-kpi-value">{{ result.입력요약.세후_월소득 }}<span class="mini-kpi-unit">만원</span></div>
+                </div>
+                <div class="mini-kpi">
+                    <div class="mini-kpi-label">월 총지출</div>
+                    <div class="mini-kpi-value">{{ result.입력요약.월_총지출 }}<span class="mini-kpi-unit">만원</span></div>
+                </div>
+                <div class="mini-kpi">
+                    <div class="mini-kpi-label">남은현금</div>
+                    <div class="mini-kpi-value">{{ result.입력요약.남은현금 }}<span class="mini-kpi-unit">만원</span></div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>항목</th>
+                        <th>금액 (만원)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>주거·수도·광열</strong></td>
+                        <td>{{ result.입력요약["주거·수도·광열"] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>정보통신</strong></td>
+                        <td>{{ result.입력요약["정보통신"] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>오락·문화</strong></td>
+                        <td>{{ result.입력요약["오락·문화"] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>음식·숙박</strong></td>
+                        <td>{{ result.입력요약["음식·숙박"] }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>월상환액</strong></td>
+                        <td>{{ result.입력요약["월상환액"] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="trust-card">
+            <div class="trust-title">🔎 {{ result.신뢰도설명.제목 }}</div>
+            <ul class="trust-list">
+                {% for item in result.신뢰도설명.항목 %}
+                <li>{{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+
+
+
+
 
     <!-- Expense comparison -->
     <div class="card">
